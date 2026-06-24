@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 222 55% 5%;
+  --foreground: 210 40% 98%;
+  --primary: 212 100% 66%;
+  --primary-foreground: 222 48% 8%;
+  --muted: 220 26% 12%;
+  --muted-foreground: 216 22% 74%;
+  --border: 218 33% 18%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 14% 0%, rgba(40, 126, 255, 0.22), transparent 32rem),
+    radial-gradient(circle at 86% 12%, rgba(222, 238, 255, 0.14), transparent 30rem),
+    linear-gradient(180deg, #030711 0%, #07111f 44%, #04070d 100%);
+  color: hsl(var(--foreground));
+  font-family: "Segoe UI", Arial, sans-serif;
+  letter-spacing: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(112, 176, 255, 0.42);
+}
+
+.glass-edge {
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-edge::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.28), transparent 28%),
+    radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(101, 171, 255, 0.2), transparent 30%);
+  opacity: 0.72;
+}
+
+.silver-text {
+  background: linear-gradient(90deg, #ffffff, #c9d8ec 34%, #7fb5ff 58%, #f9fbff);
+  background-size: 240% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.grid-mask {
+  background-image:
+    linear-gradient(rgba(145, 184, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(145, 184, 255, 0.08) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(circle at center, black 0%, transparent 72%);
+}
+
+.noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
