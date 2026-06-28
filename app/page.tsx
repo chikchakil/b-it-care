@@ -1,9 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { motion, useInView, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { AnimatePresence, motion, useInView } from "framer-motion";
 import {
+  ArrowDown,
   ArrowLeft,
+  ArrowUp,
   BadgeCheck,
   Building2,
   CheckCircle2,
@@ -21,7 +23,8 @@ import {
   ShieldCheck,
   Sparkles,
   Users,
-  Wrench
+  Wrench,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -70,29 +73,29 @@ const stats = [
 
 const steps = [
   {
-    title: "פגישת היכרות",
+    title: "שיחת היכרות",
     icon: Users,
-    text: "מכירים את העסק, היעדים, נקודות הכאב ורמת השירות הנדרשת."
+    text: "נבין איך העסק עובד היום, כמה מחשבים קיימים, אילו תוכנות בשימוש ומה הבעיות שחוזרות על עצמן. המטרה היא להבין את הצורך לפני שמציעים פתרון."
   },
   {
-    title: "בדיקת מערכות",
+    title: "בדיקת מצב",
     icon: ScanSearch,
-    text: "ממפים מחשבים, רשתות, ענן, גיבויים, הרשאות וסיכונים קיימים."
+    text: "נבדוק את סביבת המחשוב, הגיבויים, האבטחה, Microsoft 365, הרשאות משתמשים והציוד הקיים. כך אפשר לזהות תקלות, סיכונים וחוסרים לפני שהם פוגעים בעבודה."
   },
   {
     title: "בניית פתרון",
     icon: Wrench,
-    text: "בונים תכנית עבודה מדויקת עם סדרי עדיפויות, תקציב ואבני דרך."
+    text: "נבנה המלצה שמתאימה לגודל העסק, לתקציב ולצורת העבודה שלו. בלי להעמיס שירותים מיותרים ובלי פתרונות שלא באמת צריך."
   },
   {
     title: "הטמעה",
     icon: CheckCircle2,
-    text: "מיישמים את הפתרון בצורה מסודרת, מאובטחת ושקופה למשתמשים."
+    text: "נבצע את ההגדרות, השדרוגים והמעברים בצורה מסודרת, עם מינימום הפרעה לשגרת העבודה. המטרה היא שהעסק ימשיך לעבוד כמה שיותר חלק בזמן השינוי."
   },
   {
     title: "ליווי שוטף",
     icon: ShieldCheck,
-    text: "מנטרים, משפרים, מגבים ומנהלים את סביבת המחשוב לאורך זמן."
+    text: "נמשיך ללוות את העסק בתחזוקה, ניטור, פתרון תקלות ושיפור שוטף. כך המחשבים, המיילים, הגיבויים והאבטחה נשארים יציבים לאורך זמן."
   }
 ];
 
@@ -114,6 +117,46 @@ const faqs = [
     a: "הטיפול מתועד ומתועדף לפי השפעה עסקית. המטרה היא תגובה מהירה, שקיפות מלאה וצמצום השבתה."
   }
 ];
+
+type ActiveModal = "process" | "contact" | null;
+type ContactFormState = {
+  fullName: string;
+  phone: string;
+  email: string;
+  business: string;
+  employees: string;
+  message: string;
+};
+type ModalFormState = Omit<ContactFormState, "employees">;
+
+const emptyContactForm: ContactFormState = {
+  fullName: "",
+  phone: "",
+  email: "",
+  business: "",
+  employees: "",
+  message: ""
+};
+
+const emptyModalForm: ModalFormState = {
+  fullName: "",
+  phone: "",
+  email: "",
+  business: "",
+  message: ""
+};
+
+const contactFormFields = [
+  { key: "fullName", label: "שם מלא", type: "text" },
+  { key: "phone", label: "טלפון", type: "tel" },
+  { key: "email", label: "אימייל", type: "email" },
+  { key: "business", label: "שם העסק", type: "text" },
+  { key: "employees", label: "מספר עובדים", type: "number" }
+] as const;
+
+const modalFormFields = contactFormFields.filter((field) => field.key !== "employees");
+const fieldClassName =
+  "relative z-20 rounded-md border border-white/14 bg-[#071426] text-white shadow-inner outline-none transition placeholder:text-slate-500 focus:border-blue-200/70 focus:bg-[#0a1b32]";
 
 function CountUp({ value, suffix }: { value: number; suffix: string }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -138,39 +181,6 @@ function CountUp({ value, suffix }: { value: number; suffix: string }) {
       {current}
       {suffix}
     </span>
-  );
-}
-
-function TiltCard({
-  children,
-  className
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [5, -5]), { stiffness: 220, damping: 22 });
-  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-5, 5]), { stiffness: 220, damping: 22 });
-
-  return (
-    <motion.div
-      style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
-      onMouseMove={(event) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        x.set((event.clientX - rect.left) / rect.width - 0.5);
-        y.set((event.clientY - rect.top) / rect.height - 0.5);
-        event.currentTarget.style.setProperty("--mx", `${event.clientX - rect.left}px`);
-        event.currentTarget.style.setProperty("--my", `${event.clientY - rect.top}px`);
-      }}
-      onMouseLeave={() => {
-        x.set(0);
-        y.set(0);
-      }}
-      className={className}
-    >
-      {children}
-    </motion.div>
   );
 }
 
@@ -233,14 +243,6 @@ function TechBackdrop() {
         />
       ))}
       <motion.div
-        className="absolute bottom-20 left-10 hidden items-center gap-3 rounded-lg border border-white/12 bg-white/8 px-5 py-4 text-sm text-blue-100 shadow-glow backdrop-blur-xl md:flex"
-        animate={{ y: [0, -14, 0] }}
-        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-      >
-        <Server className="h-5 w-5" />
-        <span>שרתים | ענן | ניטור</span>
-      </motion.div>
-      <motion.div
         className="absolute right-6 top-28 hidden items-center gap-3 rounded-lg border border-white/12 bg-white/8 px-5 py-4 text-sm text-blue-100 shadow-glow backdrop-blur-xl md:flex"
         animate={{ y: [0, 14, 0] }}
         transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
@@ -257,95 +259,120 @@ export default function Home() {
   const [activeStep, setActiveStep] = useState(0);
   const [openFaq, setOpenFaq] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [activeModal, setActiveModal] = useState<ActiveModal>(null);
+  const [modalSubmitted, setModalSubmitted] = useState(false);
+  const [isScrolledDown, setIsScrolledDown] = useState(false);
+  const [contactForm, setContactForm] = useState<ContactFormState>(emptyContactForm);
+  const [modalForm, setModalForm] = useState<ModalFormState>(emptyModalForm);
+
+  useEffect(() => {
+    const updateScrollPosition = () => {
+      setIsScrolledDown(window.scrollY > 160);
+    };
+
+    updateScrollPosition();
+    window.addEventListener("scroll", updateScrollPosition, { passive: true });
+
+    return () => window.removeEventListener("scroll", updateScrollPosition);
+  }, []);
 
   function submitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitted(true);
   }
 
+  function submitModalForm(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setModalSubmitted(true);
+  }
+
+  function updateContactField(field: keyof ContactFormState, value: string) {
+    setContactForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateModalField(field: keyof ModalFormState, value: string) {
+    setModalForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function togglePageScroll() {
+    window.scrollTo({
+      top: isScrolledDown ? 0 : document.documentElement.scrollHeight,
+      behavior: "smooth"
+    });
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden text-white">
       <div className="noise pointer-events-none fixed inset-0 z-0 opacity-[0.035]" />
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/8 bg-[#030711]/72 backdrop-blur-2xl">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8" aria-label="ניווט ראשי">
+        <nav className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8" aria-label="ניווט ראשי">
           <a href="#top" className="flex items-center gap-3 font-bold tracking-normal" aria-label="B-IT CARE">
             <span className="flex h-10 w-10 items-center justify-center rounded-md border border-blue-200/24 bg-white/10 shadow-glow">
               <ShieldCheck className="h-5 w-5 text-blue-200" />
             </span>
             <span className="text-lg">B-IT CARE</span>
           </a>
-          <div className="hidden items-center gap-6 text-sm text-slate-300 md:flex">
+          <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-6 text-sm text-slate-300 md:flex">
             <a className="transition hover:text-white" href="#services">שירותים</a>
             <a className="transition hover:text-white" href="#process">תהליך</a>
             <a className="transition hover:text-white" href="#about">אודות</a>
             <a className="transition hover:text-white" href="#contact">יצירת קשר</a>
           </div>
-          <Button asChild size="default" className="h-10 px-4">
-            <a href="#contact">ייעוץ חינם</a>
-          </Button>
         </nav>
       </header>
 
       <section id="top" className="relative flex min-h-[92vh] items-center pt-24">
         <TechBackdrop />
-        <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-10 px-4 pb-16 pt-12 sm:px-6 lg:grid-cols-[1.08fr_.92fr] lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+        <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-10 px-4 pb-16 pt-12 sm:px-6 lg:px-8">
+          <motion.div
+            className="text-center"
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
             <div className="mb-6 inline-flex items-center gap-2 rounded-md border border-blue-200/18 bg-white/8 px-4 py-2 text-sm text-blue-100 backdrop-blur-xl">
               <Sparkles className="h-4 w-4" />
               שותף IT פרימיום לעסקים שרוצים שקט תפעולי
             </div>
-            <h1 className="silver-text animate-shimmer max-w-4xl text-5xl font-black leading-[1.05] sm:text-6xl lg:text-7xl">
+            <h1 className="silver-text mx-auto max-w-4xl animate-shimmer text-5xl font-black leading-[1.05] sm:text-6xl lg:text-7xl">
               המחשוב של העסק שלך. באחריות שלנו.
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
               ניהול מחשבים, Microsoft 365, גיבויים, אבטחת מידע ופתרונות ענן לעסקים.
             </p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg">
-                <a href="#contact">
+            <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+              <motion.div
+                animate={{ y: [0, -6, 0] }}
+                transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Button
+                  size="lg"
+                  onClick={() => {
+                    setModalSubmitted(false);
+                    setActiveModal("contact");
+                  }}
+                  className="w-full border border-blue-200/34 bg-white/12 text-white shadow-glow backdrop-blur-xl hover:border-blue-100/60 hover:bg-white/18 hover:shadow-[0_0_58px_rgba(178,211,255,0.42)] sm:w-auto"
+                >
                   קבלת ייעוץ חינם
                   <ArrowLeft className="h-5 w-5" />
-                </a>
-              </Button>
-              <Button asChild variant="outline" size="lg">
-                <a href="#process">שיחת היכרות</a>
-              </Button>
+                </Button>
+              </motion.div>
+              <motion.div
+                animate={{ y: [0, 6, 0] }}
+                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => setActiveModal("process")}
+                  className="w-full border border-white/12 bg-white/8 text-blue-100 shadow-glow backdrop-blur-xl hover:border-white/34 hover:bg-white/13 hover:text-white sm:w-auto"
+                >
+                  איך זה עובד?
+                </Button>
+              </motion.div>
             </div>
           </motion.div>
 
-          <TiltCard className="glass-edge relative min-h-[24rem] rounded-lg border border-white/12 bg-white/[0.055] p-5 shadow-[0_30px_120px_rgba(53,129,255,.28)] backdrop-blur-2xl">
-            <div className="relative z-10 grid h-full gap-4">
-              {[
-                ["אבטחת זהויות", "MFA פעיל", ShieldCheck],
-                ["גיבוי עסקי", "שחזור נבדק", DatabaseBackup],
-                ["ענן ושרתים", "ניטור רציף", Server]
-              ].map(([title, detail, Icon], index) => (
-                <motion.div
-                  key={title as string}
-                  className="rounded-lg border border-white/12 bg-[#071426]/82 p-5"
-                  initial={{ opacity: 0, x: 24 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.25 + index * 0.14 }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-slate-400">{title as string}</p>
-                      <p className="mt-1 text-xl font-bold">{detail as string}</p>
-                    </div>
-                    <Icon className="h-9 w-9 text-blue-200" />
-                  </div>
-                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/8">
-                    <motion.div
-                      className="h-full rounded-full bg-gradient-to-l from-white to-blue-400"
-                      initial={{ width: "12%" }}
-                      animate={{ width: `${78 + index * 7}%` }}
-                      transition={{ duration: 1.2, delay: 0.6 + index * 0.16 }}
-                    />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </TiltCard>
         </div>
       </section>
 
@@ -545,29 +572,27 @@ export default function Home() {
                 </p>
               </motion.div>
             ) : (
-              <form onSubmit={submitForm} className="grid gap-4" aria-label="טופס יצירת קשר">
-                {[
-                  ["שם מלא", "text"],
-                  ["טלפון", "tel"],
-                  ["אימייל", "email"],
-                  ["שם העסק", "text"],
-                  ["מספר עובדים", "number"]
-                ].map(([label, type]) => (
-                  <label key={label} className="grid gap-2 text-sm text-slate-300">
-                    {label}
+              <form onSubmit={submitForm} className="relative z-20 grid gap-4" aria-label="טופס יצירת קשר">
+                {contactFormFields.map((field) => (
+                  <label key={field.key} className="grid gap-2 text-sm text-slate-300">
+                    {field.label}
                     <input
                       required
-                      type={type}
-                      className="h-12 rounded-md border border-white/12 bg-white/8 px-4 text-white outline-none transition placeholder:text-slate-500 focus:border-blue-200/70 focus:bg-white/12"
+                      type={field.type}
+                      value={contactForm[field.key]}
+                      onChange={(event) => updateContactField(field.key, event.target.value)}
+                      className={cn(fieldClassName, "h-12 px-4")}
                     />
                   </label>
                 ))}
                 <label className="grid gap-2 text-sm text-slate-300">
-                  הודעה
+                  הודעה קצרה
                   <textarea
                     required
                     rows={4}
-                    className="resize-none rounded-md border border-white/12 bg-white/8 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-blue-200/70 focus:bg-white/12"
+                    value={contactForm.message}
+                    onChange={(event) => updateContactField("message", event.target.value)}
+                    className={cn(fieldClassName, "resize-none px-4 py-3")}
                   />
                 </label>
                 <Button type="submit" size="lg" className="mt-2">
@@ -579,6 +604,137 @@ export default function Home() {
           </div>
         </Card>
       </section>
+
+      <footer className="relative z-10 border-t border-white/8 px-4 py-6 text-center text-sm text-slate-500">
+        © 2026 B-IT CARE. כל הזכויות שמורות.
+      </footer>
+
+      <motion.button
+        type="button"
+        onClick={togglePageScroll}
+        className="fixed bottom-6 right-4 z-[70] flex h-12 w-12 items-center justify-center rounded-lg border border-white/14 bg-white/8 text-blue-100 shadow-glow backdrop-blur-xl transition hover:border-white/34 hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 md:bottom-auto md:top-1/2"
+        animate={{ y: [0, -6, 0] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+        aria-label={isScrolledDown ? "חזרה לראש העמוד" : "מעבר לתחתית העמוד"}
+      >
+        {isScrolledDown ? <ArrowUp className="h-5 w-5" /> : <ArrowDown className="h-5 w-5" />}
+      </motion.button>
+
+      <AnimatePresence>
+        {activeModal && (
+          <motion.div
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-[#030711]/78 px-4 py-6 backdrop-blur-xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setActiveModal(null)}
+          >
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="hero-modal-title"
+              className="glass-edge relative max-h-[88vh] w-full max-w-4xl rounded-lg border border-white/14 bg-[#07111f]/94 p-5 text-right text-white shadow-[0_30px_120px_rgba(53,129,255,.34)] backdrop-blur-2xl sm:p-8"
+              initial={{ opacity: 0, y: 24, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.97 }}
+              transition={{ duration: 0.28, ease: "easeOut" }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="relative z-10 max-h-[calc(88vh-2.5rem)] overflow-y-auto pl-1 sm:max-h-[calc(88vh-4rem)]">
+                <button
+                  type="button"
+                  onClick={() => setActiveModal(null)}
+                  className="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-md border border-white/12 bg-white/8 text-blue-100 transition hover:border-white/30 hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+                  aria-label="סגירת חלון"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+
+                {activeModal === "process" ? (
+                  <div>
+                    <p className="text-sm font-semibold text-blue-200">תהליך העבודה</p>
+                    <h2 id="hero-modal-title" className="mt-3 text-3xl font-black sm:text-5xl">
+                      איך זה עובד?
+                    </h2>
+                    <div className="mt-7 grid gap-3">
+                      {steps.map((step, index) => {
+                        const Icon = step.icon;
+                        return (
+                          <div key={step.title} className="rounded-lg border border-white/12 bg-white/[0.055] p-4">
+                            <div className="flex gap-4">
+                              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-white/10 text-blue-200">
+                                <Icon className="h-5 w-5" />
+                              </span>
+                              <div>
+                                <p className="text-sm text-slate-400">שלב {index + 1}</p>
+                                <h3 className="mt-1 text-lg font-bold">{step.title}</h3>
+                                <p className="mt-2 leading-7 text-slate-300">{step.text}</p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm font-semibold text-blue-200">הצעד הבא</p>
+                    <h2 id="hero-modal-title" className="mt-3 text-3xl font-black sm:text-5xl">
+                      קבלת ייעוץ חינם
+                    </h2>
+                    <p className="mt-5 max-w-2xl leading-8 text-slate-300">
+                      ספרו לנו בקצרה מה העסק צריך, ונחזור אליכם עם כיוון ראשוני ברור.
+                    </p>
+
+                    {modalSubmitted ? (
+                      <motion.div
+                        className="mt-7 rounded-lg border border-blue-200/24 bg-blue-300/10 p-6 text-center"
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                      >
+                        <CheckCircle2 className="mx-auto h-12 w-12 text-blue-200" />
+                        <h3 className="mt-4 text-2xl font-black">הבקשה נרשמה</h3>
+                        <p className="mt-2 leading-7 text-slate-300">
+                          זהו טופס עיצובי כרגע. לא נשלחה פנייה למערכת חיצונית.
+                        </p>
+                      </motion.div>
+                    ) : (
+                      <form onSubmit={submitModalForm} className="relative z-20 mt-7 grid gap-4" aria-label="טופס ייעוץ חינם">
+                        {modalFormFields.map((field) => (
+                          <label key={field.key} className="grid gap-2 text-sm text-slate-300">
+                            {field.label}
+                            <input
+                              required
+                              type={field.type}
+                              value={modalForm[field.key]}
+                              onChange={(event) => updateModalField(field.key, event.target.value)}
+                              className={cn(fieldClassName, "h-12 px-4")}
+                            />
+                          </label>
+                        ))}
+                        <label className="grid gap-2 text-sm text-slate-300">
+                          הודעה קצרה / מה צריך לבדוק
+                          <textarea
+                            required
+                            rows={4}
+                            value={modalForm.message}
+                            onChange={(event) => updateModalField("message", event.target.value)}
+                            className={cn(fieldClassName, "resize-none px-4 py-3")}
+                          />
+                        </label>
+                        <Button type="submit" size="lg" className="mt-2 w-full sm:w-auto">
+                          שליחת בקשה
+                          <Mail className="h-5 w-5" />
+                        </Button>
+                      </form>
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
