@@ -264,6 +264,10 @@ export default function Home() {
   const [isScrolledDown, setIsScrolledDown] = useState(false);
   const [contactForm, setContactForm] = useState<ContactFormState>(emptyContactForm);
   const [modalForm, setModalForm] = useState<ModalFormState>(emptyModalForm);
+  const [contactError, setContactError] = useState("");
+  const [modalError, setModalError] = useState("");
+  const [contactLoading, setContactLoading] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
 
   useEffect(() => {
     const updateScrollPosition = () => {
@@ -276,14 +280,48 @@ export default function Home() {
     return () => window.removeEventListener("scroll", updateScrollPosition);
   }, []);
 
-  function submitForm(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSubmitted(true);
+  async function submitLead(payload: ModalFormState) {
+    const response = await fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error("lead-submit-failed");
+    }
   }
 
-  function submitModalForm(event: FormEvent<HTMLFormElement>) {
+  async function submitForm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setModalSubmitted(true);
+    setContactError("");
+    setContactLoading(true);
+
+    try {
+      await submitLead(contactForm);
+      setSubmitted(true);
+      setContactForm(emptyContactForm);
+    } catch {
+      setContactError("לא הצלחנו לשלוח את הפנייה כרגע. אפשר לנסות שוב בעוד רגע.");
+    } finally {
+      setContactLoading(false);
+    }
+  }
+
+  async function submitModalForm(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setModalError("");
+    setModalLoading(true);
+
+    try {
+      await submitLead(modalForm);
+      setModalSubmitted(true);
+      setModalForm(emptyModalForm);
+    } catch {
+      setModalError("לא הצלחנו לשלוח את הבקשה כרגע. אפשר לנסות שוב בעוד רגע.");
+    } finally {
+      setModalLoading(false);
+    }
   }
 
   function updateContactField(field: keyof ContactFormState, value: string) {
@@ -595,8 +633,13 @@ export default function Home() {
                     className={cn(fieldClassName, "resize-none px-4 py-3")}
                   />
                 </label>
-                <Button type="submit" size="lg" className="mt-2">
-                  שליחת פנייה
+                {contactError ? (
+                  <p className="rounded-md border border-red-300/20 bg-red-400/10 p-3 text-sm text-red-100">
+                    {contactError}
+                  </p>
+                ) : null}
+                <Button type="submit" size="lg" className="mt-2" disabled={contactLoading}>
+                  {contactLoading ? "שולח..." : "שליחת פנייה"}
                   <Mail className="h-5 w-5" />
                 </Button>
               </form>
@@ -695,7 +738,7 @@ export default function Home() {
                         <CheckCircle2 className="mx-auto h-12 w-12 text-blue-200" />
                         <h3 className="mt-4 text-2xl font-black">הבקשה נרשמה</h3>
                         <p className="mt-2 leading-7 text-slate-300">
-                          זהו טופס עיצובי כרגע. לא נשלחה פנייה למערכת חיצונית.
+                          תודה. נחזור אליכם עם כיוון ראשוני ברור.
                         </p>
                       </motion.div>
                     ) : (
@@ -722,8 +765,13 @@ export default function Home() {
                             className={cn(fieldClassName, "resize-none px-4 py-3")}
                           />
                         </label>
-                        <Button type="submit" size="lg" className="mt-2 w-full sm:w-auto">
-                          שליחת בקשה
+                        {modalError ? (
+                          <p className="rounded-md border border-red-300/20 bg-red-400/10 p-3 text-sm text-red-100">
+                            {modalError}
+                          </p>
+                        ) : null}
+                        <Button type="submit" size="lg" className="mt-2 w-full sm:w-auto" disabled={modalLoading}>
+                          {modalLoading ? "שולח..." : "שליחת בקשה"}
                           <Mail className="h-5 w-5" />
                         </Button>
                       </form>
